@@ -5,8 +5,7 @@ import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
-from IPython import display
-from skimage.transform import resize
+# from skimage.transform import resize
 
 from .deep_sort import nn_matching
 from .deep_sort.detection import Detection
@@ -101,14 +100,17 @@ class FaceTracker:
         self.buffer_size = buffer_size
 
         print(os.getcwd())
+        print('Loading RetinaFace Model')
         self.face_detector = RetinaFace(
             os.getcwd()
-            + "/object_tracking_logger/model/retinaface-tensorrt",
+            + "/face_tracker_logger/model/retinaface-tensorrt",
             False,
             0.4,
         )
+
+        print('Loading FaceNet Model')
         self.face_recognization = tf.saved_model.load(
-            os.getcwd() + "/object_tracking_logger/model/facenet-tensorrt/"
+            os.getcwd() + "/face_tracker_logger/model/facenet-tensorrt/"
         )
         self.face_recognization_size = (160, 160, 3)
 
@@ -156,10 +158,10 @@ class FaceTracker:
         for i in range(faces.shape[0]):
             box = faces[i].astype(np.int)
             color = (255, 0, 0)
-            cropped_face = resize(
+            cropped_face = cv2.resize(
                 ori_image[box[1] : box[3], box[0] : box[2], :],
                 (160, 160),
-                mode="reflect",
+                interpolation=cv2.INTER_AREA,
             )
             cropped_faces[i] = cropped_face
             if draw_box:
@@ -186,6 +188,8 @@ class FaceTracker:
         return box[:, :4], box[:, -1]
 
     def real_time_camera(self, location_id, input_video, show_display=1):
+        if show_display == 1:
+            from IPython import display
 
         object_log = {}
         id_count = 0
@@ -334,7 +338,7 @@ class FaceTracker:
                 plt.yticks([])
             elif show_display == 2:
                 cv2.imshow(frame)
-                if cv2.waitKey(1) && 0xFF == ord('q'):
+                if cv2.waitKey(1) & 0xFF == ord('q'):
                     cv2.destroyAllWindows()
                     break
 
@@ -353,6 +357,8 @@ class FaceTracker:
     def video_tracking(
         self, location_id, input_video, output_video=None, show_display=1
     ):
+        if show_display == 1:
+            from IPython import display
         # TODO use blureness level for delete the buffer
         object_log = {}
         id_count = 0
@@ -529,7 +535,7 @@ class FaceTracker:
                 
             elif show_display == 2:
                 cv2.imshow(frame)
-                if cv2.waitKey(1) && 0xFF == ord('q'):
+                if cv2.waitKey(1) & 0xFF == ord('q'):
                     cv2.destroyAllWindows()
                     break
 
